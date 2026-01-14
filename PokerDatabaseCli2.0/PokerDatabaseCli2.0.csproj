@@ -10,6 +10,7 @@
   <ItemGroup>
     <Using Include="System.Collections.Immutable" />
     <Using Include="PokerDatabaseCli2._0.Common" />
+    <Using Include="PokerDatabaseCli2._0.HandHistoryParser" />
     </ItemGroup>
  
 

@@ -31,7 +31,7 @@ namespace PokerDatabaseCli2._0.HandHistoryParser;
     GetDatabaseStats(this Database database)
     {
         var totalHands = database.HandHistories.Count;
-         long totalPlayers = database.HandHistories.SelectMany(h => h.Players).Distinct().Count();
+         long totalPlayers = database.HandHistories.SelectMany(hand => hand.Players).DistinctBy(playerLine => playerLine.Nickname).Count();
          
         return (totalHands:totalHands, totalPlayers:totalPlayers);
     }
@@ -48,10 +48,23 @@ namespace PokerDatabaseCli2._0.HandHistoryParser;
         if (lastHeroLine is null)
             return Enumerable.Empty<(long HandId, HandHistoryPlayer heroLine)>();
         
-        return Database.GetHeroHands(database, lastHeroLine.Nickname)
+        return GetHeroHands(database, lastHeroLine.Nickname)
             .OrderByDescending(hand => hand.HandId)
             .Take(requiredHands);
           }
+
+      public static IEnumerable<(long HandId, HandHistoryPlayer heroLine)>
+    GetHeroHands( Database database, string heroName) {
+        foreach (var hand in database.HandHistories)
+        {
+            var heroLine = hand.Players.FirstOrDefault(player => player.Nickname.Equals(heroName, StringComparison.OrdinalIgnoreCase));
+            if (heroLine != null)
+            {
+                yield return (hand.HandId, heroLine);
+            }
+        }
+    }
 }
+    
 
 

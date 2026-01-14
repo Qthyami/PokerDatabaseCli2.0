@@ -15,22 +15,13 @@ Database {
         DeletedHandsIds = ImmutableList<long>.Empty
     };
 
-    public static IEnumerable<(long HandId, HandHistoryPlayer heroLine)>
-    GetHeroHands( Database database, string heroName) {
-        foreach (var hand in database.HandHistories)
-        {
-            var heroLine = hand.Players.FirstOrDefault(player => player.Nickname.Equals(heroName, StringComparison.OrdinalIgnoreCase));
-            if (heroLine != null)
-            {
-                yield return (hand.HandId, heroLine);
-            }
-        }
-    }
+  
 }
 
 public record CommandContext {
-    public Database Database { get; }
+    public Database Database { get; init; }
+
     public CommandContext(Database database) {
         Database = database;
-    }
+            }
 }

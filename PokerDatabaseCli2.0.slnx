@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="PokerDatabaseCli2.0.Tests/PokerDatabaseCli2.0.Tests.csproj" Id="f48c4336-a04d-4c65-a600-4b80f27a5a56" />
   <Project Path="PokerDatabaseCli2.0/PokerDatabaseCli2.0.csproj" />
 </Solution>
