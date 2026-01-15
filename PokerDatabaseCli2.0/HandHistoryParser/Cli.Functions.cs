@@ -20,6 +20,7 @@ public static class CliFunctions {
             .FirstOrDefault(type => type.GetCustomAttributes(typeof(NameAttribute), false)
                 .OfType<NameAttribute>()
                 .Any(attribute => attribute.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)));
+        //TODO: ДАЛЬШЕ 
 
         if (commandType == null)
             throw new InvalidOperationException($"Unknown command: {commandName}");
