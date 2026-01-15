@@ -1,5 +1,4 @@
-﻿
-using System.Reflection.Metadata;
+﻿using System.Reflection.Metadata;
 
 namespace PokerDatabaseCli2._0.HandHistoryParser;
 
@@ -12,18 +11,21 @@ public static class CliFunctions {
     }
     public static ICommand
     ParseCommand(this string inputCommand) {
-        var commandName = inputCommand.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+        var commandParts = inputCommand.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (commandParts.Length == 0)
+            throw new InvalidOperationException("Empty command");
+        var commandName = commandParts[0];
+       
         var commandType = GetAllCommandsTypes()
             .FirstOrDefault(type => type.GetCustomAttributes(typeof(NameAttribute), false)
                 .OfType<NameAttribute>()
-                .Any(anyType => anyType.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)));
+                .Any(attribute => attribute.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)));
 
         if (commandType == null)
             throw new InvalidOperationException($"Unknown command: {commandName}");
         return (ICommand)Activator.CreateInstance(commandType)!;
     }
-
-
+    
     public static CommandContext
     ExecuteCommand(this ICommand command, CommandContext context) {
         switch (command) {
@@ -37,7 +39,6 @@ public static class CliFunctions {
                 var newDatabase = context.Database.DeleteHandById(DeleteHand.HandId);
                 Console.WriteLine($"Hand with number: {DeleteHand.HandId} has been deleted.");
                 return context with { Database = newDatabase };
-
             }
 
             case ShowStatsCommand GetOverallStats: {
@@ -60,7 +61,7 @@ public static class CliFunctions {
                 }
                 
                     default:
-                Console.WriteLine($"Unknown command: {command.GetType().Name})");
+                Console.WriteLine($"Unknown command: {command.GetType().Name}");
                 return context;
         }
     }
