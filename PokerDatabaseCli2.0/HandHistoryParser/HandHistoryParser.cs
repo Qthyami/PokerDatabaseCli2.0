@@ -28,7 +28,7 @@ PokerStarsHandHistoryParser {
         return new HandHistory(
            handId: handId,
     players: [..players.Select(player =>
-        new HandHistoryPlayer(
+        new SeatLine(
             seatNumber: player.seatNumber,
             nickName: player.nickName,
             stackSize: player.stackSize,

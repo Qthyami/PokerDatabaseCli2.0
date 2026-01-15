@@ -3,14 +3,14 @@
 public class
 HandHistory {
     public long HandId { get; }
-    public ImmutableList<HandHistoryPlayer> Players { get; }
-    public HandHistory(long handId, ImmutableList<HandHistoryPlayer> players) {
+    public ImmutableList<SeatLine> Players { get; }
+    public HandHistory(long handId, ImmutableList<SeatLine> players) {
         if (players.Count < 2)
             throw new InvalidOperationException("There must be at least two players");
         HandId = handId;
         Players = players;
     }
-        public HandHistoryPlayer 
+        public SeatLine 
     GetPlayer(string nickname) => 
         Players.TryGet(player => player.Nickname == nickname, out var result) ? result 
             : throw new InvalidOperationException($"Player {nickname.Quoted()} not found in hand {HandId.Quoted()}");
@@ -19,7 +19,7 @@ HandHistory {
     public IEnumerable<string> PlayerNicknames => Players.Select(player => player.Nickname);
 
 
-    public bool TryGetHeroPlayer(out HandHistoryPlayer heroPlayer) {
+    public bool TryGetHeroPlayer(out SeatLine heroPlayer) {
         heroPlayer = Players.First(player => player.DealtCards.Count > 0);
         return true;
     }
@@ -28,12 +28,12 @@ HandHistory {
 }
 
 public class
-HandHistoryPlayer {
+SeatLine {
     public int SeatNumber { get; }
     public string Nickname { get; }
     public double StackSize { get; }
     public ImmutableList<Card> DealtCards { get; }
-    public HandHistoryPlayer(int seatNumber, string nickName, double stackSize, ImmutableList<Card> dealtCards) {
+    public SeatLine(int seatNumber, string nickName, double stackSize, ImmutableList<Card> dealtCards) {
         SeatNumber = seatNumber;
         Nickname = nickName;
         StackSize = stackSize;

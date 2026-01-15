@@ -204,12 +204,9 @@ public void GetDatabaseStats_WithHands_ReturnsCorrectCounts() {
 
     var database = Database.CreateEmpty().AddHands(handsToAdd);
 
-    // Act
-    var (totalHands, totalPlayers) = database.GetDatabaseStats();
-
-    // Assert
-    totalHands.Assert(3);
-    totalPlayers.Assert(4); // LamanJohn, niñopoker69, Eredar5, G.Andrei95
+    // Act & Assert
+    database.HandCount.Assert(3);
+    database.PlayersCount.Assert(4); // LamanJohn, niñopoker69, Eredar5, G.Andrei95
 }
 
 [Test]
@@ -217,12 +214,9 @@ public void GetDatabaseStats_EmptyDatabase_ReturnsZeros() {
     // Arrange
     var database = Database.CreateEmpty();
 
-    // Act
-    var (totalHands, totalPlayers) = database.GetDatabaseStats();
-
-    // Assert
-    totalHands.Assert(0);
-    totalPlayers.Assert(0);
+    // Act & Assert
+    database.HandCount.Assert(0);
+    database.PlayersCount.Assert(0);
 }
 
 [Test]
@@ -238,11 +232,8 @@ public void GetDatabaseStats_AfterDeletingHand_ReturnsUpdatedCounts() {
         .AddHands(handsToAdd)
         .DeleteHandById(255725031222L);
 
-    // Act
-    var (totalHands, totalPlayers) = database.GetDatabaseStats();
-
-    // Assert
-    totalHands.Assert(2);
+    // Act & Assert
+    database.HandCount.Assert(2);
 }
 [Test]
 public void GetLastHeroHands_ReturnsRequestedNumberOfHands() {
