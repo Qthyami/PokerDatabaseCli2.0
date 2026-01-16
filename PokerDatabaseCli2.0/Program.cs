@@ -7,6 +7,7 @@ class Program {
         var context= new CommandContext(Database.CreateEmpty());
          Console.WriteLine("Welcome to Poker Database CLI! \n");
         Console.WriteLine("Type command (or 'exit')");
+
         
         while (true) {
             Console.Write("> ");
