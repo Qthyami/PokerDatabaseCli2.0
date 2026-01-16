@@ -22,25 +22,37 @@ public static class CliFunctions {
             .FirstOrDefault(type => type.GetCustomAttributes(typeof(NameAttribute), false)
                 .OfType<NameAttribute>()
                 .Any(attribute => attribute.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)));
+
+        if (commandType == null)
+        throw new InvalidOperationException($"Unknown command: {commandName}");
         
         var ctor = commandType.GetConstructors().First(); //получили конструктор, который там и есть один.
-        var parameterValues = new object?[ctor.GetParameters().Length]; //создали массив параметров внутри конструктора, который будет 1, и которы сейчас вообще [null]
-        for (int i = 0; i < ctor.GetParameters().Length; i++) {
-            var param = ctor.GetParameters()[i]; //получили параметр конструктора
-            var aliasAttribute = (AliasAttribute?)Attribute.GetCustomAttribute(param, typeof(AliasAttribute)); //тут будет "n"
-            if (aliasAttribute == null)
-                continue; //если атрибута нет, то пропускаем
-            for (int j = 1; j < commandParts.Length; j++) { //перебираем все части команды, начиная со второй, т.к. первая это первое слово в команде
+        var parameters = ctor.GetParameters();
+         var parameterValues = new object?[parameters.Length]; //создали массив параметров внутри конструктора, который будет 1, и которы сейчас вообще [null]
+         for (int i = 0; i < parameters.Length; i++) {
+            var param = parameters[i]; //получили параметр конструктора
+            var aliasAttributes = param
+            .GetCustomAttributes(typeof(AliasAttribute), false)
+            .Cast<AliasAttribute>()
+            .ToList(); //тут будет "n" и [--"HandNumber"]
+            if (!aliasAttributes.Any())
+            continue;//если атрибута нет, то пропускаем
+
+            bool found = false;
+            
+            for (int j = 1; j < commandParts.Length - 1; j++) { //перебираем все части команды, начиная со второй, т.к. первая это первое слово в команде
                 var part = commandParts[j]; // дальше тупо сравниваем 
-                if (part.Equals("-" + aliasAttribute.Value, StringComparison.OrdinalIgnoreCase)) {
-                    if (j + 1 >= commandParts.Length)
-                        throw new InvalidOperationException($"No value provided for {part}");
-                    var valuePart = commandParts[j + 1];//после сошедшейся проверки берем второе слово в команде
-                    //конвертируем в нужный тип
-                    object? value = Convert.ChangeType(valuePart, param.ParameterType);
-                    parameterValues[i] = value;
+                 foreach (var alias in aliasAttributes)
+            {
+                if (part.Equals("-" + alias.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    var valuePart = commandParts[j + 1];
+                    parameterValues[i] = Convert.ChangeType(valuePart, param.ParameterType);
+                    found = true;
                     break;
                 }
+            }
+                
             }
 
         }

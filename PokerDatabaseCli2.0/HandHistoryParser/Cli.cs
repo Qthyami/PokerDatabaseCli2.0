@@ -31,7 +31,7 @@ public class AliasAttribute : Attribute {
 public record ShowStatsCommand() : ICommand;
 
 [Name("DeleteHand"), Description ("Deletes a hand by its ID from the database.")]
-public record DeleteHandCommand( [Alias("n")] [Alias("--HandNumber")]  long HandId):ICommand;
+public record DeleteHandCommand( [Alias("n")] [Alias("HandNumber")]  long HandId):ICommand;
    
 [Name("AddHands"), Description ("Adds hand histories from a specified directory to the database.")]
 public record AddHandsCommand([Alias("p")] [Alias("--Path")] string DirectoryPath) : ICommand;
