@@ -13,6 +13,7 @@ public static class CliFunctions {
     ParseCommand(this string inputCommand) {
         if (string.IsNullOrWhiteSpace(inputCommand))
             throw new InvalidOperationException("Empty input");
+
         var commandParts = inputCommand.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (commandParts.Length == 0)
             throw new InvalidOperationException("Empty command");
@@ -20,43 +21,29 @@ public static class CliFunctions {
         var commandName = commandParts[0];
         var commandType = GetAllCommandsTypes()
             .FirstOrDefault(type => type.GetCustomAttributes(typeof(NameAttribute), false)
-                .OfType<NameAttribute>()
-                .Any(attribute => attribute.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)));
+            .OfType<NameAttribute>()
+            .Any(attribute => attribute.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)));
 
         if (commandType == null)
-        throw new InvalidOperationException($"Unknown command: {commandName}");
-        
-        var ctor = commandType.GetConstructors().First(); //получили конструктор, который там и есть один.
+            throw new InvalidOperationException($"Unknown command: {commandName}");
+
+        var ctor = commandType.GetConstructors().First(); //получили конструктор команды, который там и есть один.
+        // Получаем параметры конструктора (например: DirectoryPath)
         var parameters = ctor.GetParameters();
-         var parameterValues = new object?[parameters.Length]; //создали массив параметров внутри конструктора, который будет 1, и которы сейчас вообще [null]
-         for (int i = 0; i < parameters.Length; i++) {
-            var param = parameters[i]; //получили параметр конструктора
-            var aliasAttributes = param
-            .GetCustomAttributes(typeof(AliasAttribute), false)
-            .Cast<AliasAttribute>()
-            .ToList(); //тут будет "n" и [--"HandNumber"]
-            if (!aliasAttributes.Any())
-            continue;//если атрибута нет, то пропускаем
-
-            bool found = false;
-            
-            for (int j = 1; j < commandParts.Length - 1; j++) { //перебираем все части команды, начиная со второй, т.к. первая это первое слово в команде
-                var part = commandParts[j]; // дальше тупо сравниваем 
-                 foreach (var alias in aliasAttributes)
-            {
-                if (part.Equals("-" + alias.Value, StringComparison.OrdinalIgnoreCase))
-                {
-                    var valuePart = commandParts[j + 1];
-                    parameterValues[i] = Convert.ChangeType(valuePart, param.ParameterType);
-                    found = true;
-                    break;
-                }
-            }
-                
-            }
-
+        var parameterValuesObject = new object?[parameters.Length]; //создали массив параметров внутри конструктора, который будет иметь 1 параметр, типо DirectoryPath итд 
+        for (int i = 0; i < parameters.Length; i++) {
+            //получили параметр конструктора в случае аргмента directory path он {System.String DirectoryPath}
+            var param = parameters[i];
+            // вторая часть команды, т.е аргумент, потому что под [0] идет имя команды
+            var valuePart = commandParts[i + 1]; 
+            //parameterValues[0]=меняем тип (переменная, к какому типу будем приводить, "C:\Poker\1" -> Object "C:\Poker\1"  {System.String DirectoryPath}
+            parameterValuesObject[i] = Convert.ChangeType(valuePart, param.ParameterType);
         }
-        return (ICommand)ctor.Invoke(parameterValues);
+        //возвращаем инстанс класса ... Invoke делает new AddHandsCommand("C:\\Poker\\1");
+        var instance = ctor.Invoke(parameterValuesObject);
+        if (instance is not ICommand comand)
+            throw new InvalidOperationException($"{commandType.Name} does not implement ICommand");
+            return comand;
     }
 
     public static CommandContext
@@ -104,11 +91,8 @@ public static class CliFunctions {
         return typeof(CliFunctions)
             .Assembly
             .GetTypes()
-            .Where(t => typeof(ICommand).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
-        //.Select(t => (ICommand)Activator.CreateInstance(t)!);
-    }
-
-
+            .Where(type => typeof(ICommand).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+           }
 }
 
 
