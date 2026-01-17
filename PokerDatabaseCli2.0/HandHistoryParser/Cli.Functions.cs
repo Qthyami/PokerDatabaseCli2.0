@@ -1,6 +1,5 @@
-﻿using System;
-using System.Data;
-using System.Reflection.Metadata;
+﻿using System.Data;
+using System.Reflection;
 
 namespace PokerDatabaseCli2._0.HandHistoryParser;
 
@@ -8,23 +7,12 @@ public static class CliFunctions {
 
     public static ICommand
     ParseCommand(this string inputCommand) {
-        if (string.IsNullOrWhiteSpace(inputCommand))
-            throw new InvalidOperationException("Empty input");
+        inputCommand.ValidateInput();
+        var commandParts = inputCommand.SplitCommand();
+        var commandName = commandParts.GetCommandNameFromParts();
+        var commandType = commandName.FindCommandType();
 
-        var commandParts = inputCommand.SplitWords().ToArray();
-        if (commandParts.Length == 0)
-            throw new InvalidOperationException("Empty command");
-
-        var commandName = commandParts[0];
-        var commandType = GetAllCommandsTypes()
-            .FirstOrDefault(type => type.GetCustomAttributes(typeof(NameAttribute), false)
-            .OfType<NameAttribute>()
-            .Any(attribute => attribute.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)));
-
-        if (commandType == null)
-            throw new InvalidOperationException($"Unknown command: {commandName}");
-
-        return CreateCommandInstance(commandType: commandType, commandParts: commandParts);
+        return CreateCommandInstance(commandType, commandParts);
     }
 
     public static CommandContext
@@ -37,8 +25,7 @@ public static class CliFunctions {
              ShowDeletedHandsCommand ShowDeletedHands => context.ExecuteGetDeletedHands(ShowDeletedHands),
              ICommand unknown => context.ExecuteUnknownCommand(command)
          };
-    
-    //возвращает типы комманд DeleteHandCommand(0), т.е без Activator.CreateInstance
+
     public static IEnumerable<Type>
     GetAllCommandsTypes() {
         return typeof(CliFunctions)
@@ -47,30 +34,6 @@ public static class CliFunctions {
             .Where(type => typeof(ICommand).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
     }
 
-    public static ICommand CreateCommandInstance(Type commandType, string[] commandParts) {
-        // Got the command constructor, there is only one.
-        var ctor = commandType.GetConstructors().First();
-        // Get constructor parameters (like : DirectoryPath)
-        var parameters = ctor.GetParameters();
-        // Create an array of constructor parameters, which will have 1 parameter, like DirectoryPath etc.
-        var parameterValuesObject = new object?[parameters.Length];
-        for (int i = 0; i < parameters.Length; i++) {
-            // Got the constructor parameter, in case of directory path argument it is {System.String DirectoryPath}
-            var param = parameters[i];
-            // Second part of the command, i.e. argument, because [0] is the command name
-            var valuePart = commandParts[i + 1];
-            // parameterValues[0] = change type (variable, what type we will convert to) "C:\Poker\1" -> Object "C:\Poker\1" {System.String DirectoryPath}
-            // and put the obtained value into an empty object at index 0
-            parameterValuesObject[i] = Convert.ChangeType(valuePart, param.ParameterType);
-        }
-        // Return an instance of the class ... Invoke does new AddHandsCommand("C:\\Poker\\1");
-        var instance = ctor.Invoke(parameterValuesObject);
-        if (instance is not ICommand comand)
-            throw new InvalidOperationException($"{commandType.Name} does not implement ICommand");
-        return comand;
-    }
-
-   
     public static CommandContext
     ExecuteAddHands(this CommandContext context, AddHandsCommand command) {
         var hands = command.DirectoryPath.GetHandHistoriesFromDirectory().ToImmutableList();
@@ -117,13 +80,13 @@ public static class CliFunctions {
         var context = new CommandContext(Database.CreateEmpty());
         Console.WriteLine("Welcome to Poker Database CLI! \n");
         Console.WriteLine("Type command (or 'exit')");
-         while (true) {
+        while (true) {
             Console.Write("> ");
             var input = Console.ReadLine();
 
             if (ShouldExit(input))
                 break;
-             try {
+            try {
                 var command = input.ParseCommand();
                 context = command.ExecuteCommand(context); //ExecuteCommand(command, context) читабельнее
             }
@@ -142,6 +105,71 @@ public static class CliFunctions {
         var nameAttribute = (NameAttribute?)Attribute.GetCustomAttribute(type, typeof(NameAttribute));
         return nameAttribute?.Value ?? type.Name;
     }
+
+    private static void
+    ValidateInput(this string input) {
+        if (string.IsNullOrWhiteSpace(input))
+            throw new InvalidOperationException("Empty input");
+    }
+
+    private static string[]
+    SplitCommand(this string input) => input.SplitWords().ToArray();
+
+    private static string
+    GetCommandNameFromParts(this string[] parts) {
+        if (parts.Length == 0)
+            throw new InvalidOperationException("Empty command");
+        return parts[0];
+    }
+
+    private static Type
+    FindCommandType(this string commandName) {
+        var type = GetAllCommandsTypes()
+            .FirstOrDefault(t => t.GetCustomAttributes(typeof(NameAttribute), false)
+                .OfType<NameAttribute>()
+                .Any(attr => attr.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)));
+
+        if (type == null)
+            throw new InvalidOperationException($"Unknown command: {commandName}");
+
+        return type;
+    }
+
+    public static ICommand CreateCommandInstance(this Type commandType, string[] commandParts) {
+        var constructor = commandType.GetMainConstructor();
+
+        var parameters = constructor.GetParameters();
+        var parameterValuesObject = parameters.GetParameterValues(commandParts);
+
+        var instance = constructor.Invoke(parameterValuesObject);
+        if (instance is not ICommand command)
+            throw new InvalidOperationException($"{commandType.Name} does not implement ICommand");
+
+        return command;
+    }
+
+    private static ConstructorInfo
+    GetMainConstructor(this Type type) => type.GetConstructors().First();
+
+    private static object?[]
+    GetParameterValues(this ParameterInfo[] parameters, string[] commandParts) {
+        // Create an array of constructor parameters, which will have 1 parameter, like DirectoryPath etc, now empty
+        var parameterValuesObject = new object?[parameters.Length];
+        for (int i = 0; i < parameters.Length; i++) {
+            var param = parameters[i]; // сразу первый параметр и будет нужный т.е [0]
+            var valuePart = commandParts[i + 1]; // а параметр комманды сидит в [0+1] т.е. "C:\Poker\1"
+            parameterValuesObject[i] = Convert.ChangeType(valuePart, param.ParameterType); // пихаем в [0] c конвертацией "C:\Poker\1" -> Object "C:\Poker\1" {System.String DirectoryPath}
+        }
+        return parameterValuesObject;
+    }
+
+
+
+
+
+
+
+
 }
 
 
