@@ -1,22 +1,21 @@
 ﻿
 namespace PokerDatabaseCli2._0.HandHistoryParser;
-
-    public static class DatabaseaFunctions
-{
+//ФУНКЦИИ-РЕДЬЮСЕРЫ ДЛЯ DATABASE ЗДЕСЬ, А QERRY-ФУНКЦИИ - В САМОЙ DATABASE
+public static class DatabaseFunctions {
     public static Database
-    AddHands(this Database database, ImmutableList<HandHistory> handsToAdd)
-    {
-        return database with { HandHistories = database.HandHistories.AddRange(handsToAdd) };
+    AddHands(this Database database, ImmutableList<HandHistory> handsToAdd){
+        var existingHandIds = database.HandHistories.Select(hand => hand.HandId).ToHashSet();
+        var newHands= handsToAdd.Where(hand => !existingHandIds.Contains(hand.HandId)).ToImmutableList();
+        return database with { HandHistories = database.HandHistories.AddRange(newHands)};
     }
-
+    
     public static Database
     DeleteHandById(this Database database, long handId) {
         var handToDelete = database.HandHistories.FirstOrDefault(hand => hand.HandId == handId);
-        if (handToDelete is null)
-            return database;
+        if (handToDelete == null)
+            throw new InvalidOperationException($"Hand with id {handId.Quoted()} not found.");
 
-        return database with
-        {
+        return database with {
             HandHistories = database.HandHistories.Remove(handToDelete),
             DeletedHandsIds = database.DeletedHandsIds.Add(handId)
         };

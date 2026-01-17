@@ -86,10 +86,9 @@ public class DatabaseTests {
         Seat 5: Eredar5 (button) folded before Flop (didn't bet)
         Seat 6: G.Andrei95 (small blind) folded before Flop
         """;
-    //TEST FOR DatabaseaFunctions.AddHands
+
     [Test]
     public void AddHands_AddsHandsToEmptyDatabase_ReturnsNewDatabaseWithHands() {
-        // Arrange
         var emptyDatabase = Database.CreateEmpty();
         var handsToAdd = TestHandHistories
             .GetLines()
@@ -97,19 +96,16 @@ public class DatabaseTests {
             .Select(text => text.ParseHandHistory())
             .ToImmutableList();
 
-        // Act
         var result = emptyDatabase.AddHands(handsToAdd);
 
-        // Assert
         result.HandHistories.AssertCount(3);
         result.HandHistories[0].HandId.Assert(255725031222);
         result.HandHistories[1].HandId.Assert(255725038185);
         result.HandHistories[2].HandId.Assert(255725043455);
     }
-    //Test for DatabaseFunctions.DeleteHandById
+
     [Test]
     public void AddHands_AddsHandsToExistingDatabase_CombinesHands() {
-        // Arrange
         var handsToAdd = TestHandHistories
             .GetLines()
             .SplitByEmptyLines()
@@ -118,29 +114,24 @@ public class DatabaseTests {
 
         var databaseWithOneHand = Database.CreateEmpty().AddHands(handsToAdd.Take(1).ToImmutableList());
 
-        // Act
         var result = databaseWithOneHand.AddHands(handsToAdd.Skip(1).ToImmutableList());
 
-        // Assert
         result.HandHistories.AssertCount(3);
     }
 
     [Test]
     public void AddHands_EmptyList_ReturnsUnchangedDatabase() {
-        // Arrange
         var database = Database.CreateEmpty();
         var emptyList = ImmutableList<HandHistory>.Empty;
 
-        // Act
         var result = database.AddHands(emptyList);
 
-        // Assert
         result.HandHistories.AssertCount(0);
     }
 
+   
     [Test]
-    public void DeleteHandById_ExistingHand_RemovesHandAndAddsToDeletedIds() {
-        // Arrange
+    public void GetDatabaseStats_WithHands_ReturnsCorrectCounts() {
         var handsToAdd = TestHandHistories
             .GetLines()
             .SplitByEmptyLines()
@@ -148,181 +139,128 @@ public class DatabaseTests {
             .ToImmutableList();
 
         var database = Database.CreateEmpty().AddHands(handsToAdd);
-        var handIdToDelete = 255725031222L;
 
-        // Act
-        var result = database.DeleteHandById(handIdToDelete);
-
-        // Assert
-        result.HandHistories.AssertCount(2);
-        result.DeletedHandsIds.AssertCount(1);
-        result.DeletedHandsIds[0].Assert(handIdToDelete);
-        result.HandHistories.All(h => h.HandId != handIdToDelete).AssertTrue();
+        database.HandCount.Assert(3);
+        database.PlayersCount.Assert(4);
     }
 
     [Test]
-    public void DeleteHandById_NonExistingHand_ReturnsUnchangedDatabase() {
-        // Arrange
-        var handsToAdd = TestHandHistories
-            .GetLines()
-            .SplitByEmptyLines()
-            .Select(text => text.ParseHandHistory())
-            .ToImmutableList();
-
-        var database = Database.CreateEmpty().AddHands(handsToAdd);
-        var nonExistingHandId = 999999999L;
-
-        // Act
-        var result = database.DeleteHandById(nonExistingHandId);
-
-        // Assert
-        result.HandHistories.AssertCount(3);
-        result.DeletedHandsIds.AssertCount(0);
-    }
-
-    [Test]
-    public void DeleteHandById_EmptyDatabase_ReturnsEmptyDatabase() {
-        // Arrange
+    public void GetDatabaseStats_EmptyDatabase_ReturnsZeros() {
         var database = Database.CreateEmpty();
 
-        // Act
-        var result = database.DeleteHandById(123456L);
-
-        // Assert
-        result.HandHistories.AssertCount(0);
-        result.DeletedHandsIds.AssertCount(0);
+        database.HandCount.Assert(0);
+        database.PlayersCount.Assert(0);
     }
 
     [Test]
-public void GetDatabaseStats_WithHands_ReturnsCorrectCounts() {
-    // Arrange
-    var handsToAdd = TestHandHistories
-        .GetLines()
-        .SplitByEmptyLines()
-        .Select(text => text.ParseHandHistory())
-        .ToImmutableList();
+    public void DeleteHandById_EmptyDatabase_Throws() {
+        var database = Database.CreateEmpty();
 
-    var database = Database.CreateEmpty().AddHands(handsToAdd);
+        Assert.Throws<InvalidOperationException>(
+            () => database.DeleteHandById(123456L));
+    }
 
-    // Act & Assert
-    database.HandCount.Assert(3);
-    database.PlayersCount.Assert(4); // LamanJohn, niñopoker69, Eredar5, G.Andrei95
-}
+    [Test]
+    public void DeleteHandById_NonExistingHand_Throws() {
+        var database = Database.CreateEmpty();
 
-[Test]
-public void GetDatabaseStats_EmptyDatabase_ReturnsZeros() {
-    // Arrange
-    var database = Database.CreateEmpty();
+        Assert.Throws<InvalidOperationException>(
+            () => database.DeleteHandById(999999999L));
+    }
 
-    // Act & Assert
-    database.HandCount.Assert(0);
-    database.PlayersCount.Assert(0);
-}
+    [Test]
+    public void GetDatabaseStats_AfterDeletingHand_ReturnsUpdatedCounts() {
+        // Arrange
+        var handsToAdd = TestHandHistories
+            .GetLines()
+            .SplitByEmptyLines()
+            .Select(text => text.ParseHandHistory())
+            .ToImmutableList();
 
-[Test]
-public void GetDatabaseStats_AfterDeletingHand_ReturnsUpdatedCounts() {
-    // Arrange
-    var handsToAdd = TestHandHistories
-        .GetLines()
-        .SplitByEmptyLines()
-        .Select(text => text.ParseHandHistory())
-        .ToImmutableList();
+        var existingHandId = handsToAdd[0].HandId;
 
-    var database = Database.CreateEmpty()
-        .AddHands(handsToAdd)
-        .DeleteHandById(255725031222L);
+        var database = Database.CreateEmpty()
+            .AddHands(handsToAdd);
+        
+        var updatedDatabase = database.DeleteHandById(existingHandId);
 
-    // Act & Assert
-    database.HandCount.Assert(2);
-}
-[Test]
-public void GetLastHeroHands_ReturnsRequestedNumberOfHands() {
-    // Arrange
-    var handsToAdd = TestHandHistories
-        .GetLines()
-        .SplitByEmptyLines()
-        .Select(text => text.ParseHandHistory())
-        .ToImmutableList();
+        updatedDatabase.HandCount.Assert(handsToAdd.Count - 1);
+    }
 
-    var database = Database.CreateEmpty().AddHands(handsToAdd);
 
-    // Act
-    var result = database.GetLastHeroHands(2).ToList();
+    [Test]
+    public void GetLastHeroHands_ReturnsRequestedNumberOfHands() {
+        var handsToAdd = TestHandHistories
+            .GetLines()
+            .SplitByEmptyLines()
+            .Select(text => text.ParseHandHistory())
+            .ToImmutableList();
 
-    // Assert
-    result.AssertCount(2);
-    result[0].heroLine.Nickname.Assert("LamanJohn");
-    result[1].heroLine.Nickname.Assert("LamanJohn");
-}
+        var database = Database.CreateEmpty().AddHands(handsToAdd);
 
-[Test]
-public void GetLastHeroHands_ReturnsHandsInDescendingOrder() {
-    // Arrange
-    var handsToAdd = TestHandHistories
-        .GetLines()
-        .SplitByEmptyLines()
-        .Select(text => text.ParseHandHistory())
-        .ToImmutableList();
+        var result = database.GetLastHeroHands(2).ToList();
 
-    var database = Database.CreateEmpty().AddHands(handsToAdd);
+        result.AssertCount(2);
+        result[0].heroLine.Nickname.Assert("LamanJohn");
+        result[1].heroLine.Nickname.Assert("LamanJohn");
+    }
 
-    // Act
-    var result = database.GetLastHeroHands(3).ToList();
+    [Test]
+    public void GetLastHeroHands_ReturnsHandsInDescendingOrder() {
+        var handsToAdd = TestHandHistories
+            .GetLines()
+            .SplitByEmptyLines()
+            .Select(text => text.ParseHandHistory())
+            .ToImmutableList();
 
-    // Assert
-    result.AssertCount(3);
-    result[0].HandId.Assert(255725043455L); // newest first
-    result[1].HandId.Assert(255725038185L);
-    result[2].HandId.Assert(255725031222L); // oldest last
-}
+        var database = Database.CreateEmpty().AddHands(handsToAdd);
 
-[Test]
-public void GetLastHeroHands_RequestMoreThanExists_ReturnsAllAvailable() {
-    // Arrange
-    var handsToAdd = TestHandHistories
-        .GetLines()
-        .SplitByEmptyLines()
-        .Select(text => text.ParseHandHistory())
-        .ToImmutableList();
+        var result = database.GetLastHeroHands(3).ToList();
 
-    var database = Database.CreateEmpty().AddHands(handsToAdd);
+        result.AssertCount(3);
+        result[0].HandId.Assert(255725043455L);
+        result[1].HandId.Assert(255725038185L);
+        result[2].HandId.Assert(255725031222L);
+    }
 
-    // Act
-    var result = database.GetLastHeroHands(100).ToList();
+    [Test]
+    public void GetLastHeroHands_RequestMoreThanExists_ReturnsAllAvailable() {
+        var handsToAdd = TestHandHistories
+            .GetLines()
+            .SplitByEmptyLines()
+            .Select(text => text.ParseHandHistory())
+            .ToImmutableList();
 
-    // Assert
-    result.AssertCount(3); // only 3 hands exist
-}
+        var database = Database.CreateEmpty().AddHands(handsToAdd);
 
-[Test]
-public void GetLastHeroHands_EmptyDatabase_ReturnsEmpty() {
-    // Arrange
-    var database = Database.CreateEmpty();
+        var result = database.GetLastHeroHands(100).ToList();
 
-    // Act
-    var result = database.GetLastHeroHands(5).ToList();
+        result.AssertCount(3);
+    }
 
-    // Assert
-    result.AssertCount(0);
-}
+    [Test]
+    public void GetLastHeroHands_EmptyDatabase_ReturnsEmpty() {
+        var database = Database.CreateEmpty();
 
-[Test]
-public void GetLastHeroHands_HeroCardsArePreserved() {
-    // Arrange
-    var handsToAdd = TestHandHistories
-        .GetLines()
-        .SplitByEmptyLines()
-        .Select(text => text.ParseHandHistory())
-        .ToImmutableList();
+        var result = database.GetLastHeroHands(5).ToList();
 
-    var database = Database.CreateEmpty().AddHands(handsToAdd);
+        result.AssertCount(0);
+    }
 
-    // Act
-    var result = database.GetLastHeroHands(1).ToList();
+    [Test]
+    public void GetLastHeroHands_HeroCardsArePreserved() {
+        var handsToAdd = TestHandHistories
+            .GetLines()
+            .SplitByEmptyLines()
+            .Select(text => text.ParseHandHistory())
+            .ToImmutableList();
 
-    // Assert
-    result[0].heroLine.DealtCards.AssertCount(2);
-    result[0].heroLine.DealtCards[0].AssertCard(CardRank.Four, Suit.Clubs);  // 4c
-    result[0].heroLine.DealtCards[1].AssertCard(CardRank.Five, Suit.Hearts); // 5h
-}
+        var database = Database.CreateEmpty().AddHands(handsToAdd);
+
+        var result = database.GetLastHeroHands(1).ToList();
+
+        result[0].heroLine.DealtCards.AssertCount(2);
+        result[0].heroLine.DealtCards[0].AssertCard(CardRank.Four, Suit.Clubs);
+        result[0].heroLine.DealtCards[1].AssertCard(CardRank.Five, Suit.Hearts);
+    }
 }

@@ -10,14 +10,18 @@ Database {
         HandHistories = ImmutableList<HandHistory>.Empty,
         DeletedHandsIds = ImmutableList<long>.Empty
     };
-    
+
     public long HandCount => HandHistories.Count;
-    
+
     public long PlayersCount => HandHistories
         .SelectMany(hand => hand.Players)
         .DistinctBy(playerLine => playerLine.Nickname)
         .Count();
-
+        
+    //ЭТА ФУНКЦИЯ ОПРЕДЕЛЯЕТ КТО HERO ПО ПОСЛЕДНЕЙ РАЗДАЧЕ И ВОЗВРАЩАЕТ ПОСЛЕДНИЕ N РАЗДАЧ С ЕГО УЧАСТИЕМ
+    //ЕСЛИ В ПРЕДПОСЛЕДНЕЙ РАЗДАЧЕ HERO ВНЕЗАПНО ДРУГОЙ - ОНА ЭТУ РАЗДАЧУ ПРОПУСТИТ И ВСЕ РАВНО НАБЕРЕТ N РАЗДАЧ
+    //ПРОСТО ТАК НАБРАТЬ (required) ПОСЛЕДНИХ РАЗДАЧ НЕЛЬЗЯ.
+    //ХОТЯ НА МАЙНИНГЕ РАБОТАТЬ НЕ БУДЕТ, ТАМ НЕ БУДЕТ DealtCards
     public IEnumerable<(long HandId, SeatLine heroLine)>
     GetLastHeroHands(int requiredHands) {
         var heroNickname = DefineHeroNickname();
@@ -32,13 +36,12 @@ Database {
 
     public IEnumerable<(long HandId, SeatLine heroLine)>
     GetHeroHands(string heroName) {
-            foreach (var hand in HandHistories) {
-                var heroLine = hand.Players.FirstOrDefault(player => player.Nickname.Equals(heroName, StringComparison.OrdinalIgnoreCase));
-                if (heroLine != null) {
-                    yield return (hand.HandId, heroLine);
-                }
-            }
+        foreach (var hand in HandHistories) {
+            if (!hand.ContainsPlayer(heroName))
+                continue;
+            yield return (hand.HandId, hand.GetPlayer(heroName));
         }
+    }
 
     public string?
     DefineHeroNickname() {
