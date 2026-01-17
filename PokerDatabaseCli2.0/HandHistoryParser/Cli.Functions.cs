@@ -89,6 +89,8 @@ public static class CliFunctions {
             try {
                 var command = input.ParseCommand();
                 context = command.ExecuteCommand(context); //ExecuteCommand(command, context) читабельнее
+                //проблема такого синтаксиса, что читающий не понимает, есть ли у command метод ExecuteCommand
+                // или это у ExecuteCommand 2 параметра
             }
             catch (Exception ex) {
                 Console.WriteLine($"Error: {ex.Message}");
@@ -97,7 +99,7 @@ public static class CliFunctions {
     }
 
     private static bool ShouldExit(string? input) =>
-    input == null || input.Trim().Equals("exit", StringComparison.OrdinalIgnoreCase);
+    input!.Trim().Equals("exit", StringComparison.OrdinalIgnoreCase);
 
     public static string
     GetCommandName(this ICommand command) {
@@ -135,7 +137,8 @@ public static class CliFunctions {
         return type;
     }
 
-    public static ICommand CreateCommandInstance(this Type commandType, string[] commandParts) {
+    public static ICommand
+    CreateCommandInstance(this Type commandType, string[] commandParts) {
         var constructor = commandType.GetMainConstructor();
 
         var parameters = constructor.GetParameters();
@@ -158,7 +161,8 @@ public static class CliFunctions {
         for (int i = 0; i < parameters.Length; i++) {
             var param = parameters[i]; // сразу первый параметр и будет нужный т.е [0]
             var valuePart = commandParts[i + 1]; // а параметр комманды сидит в [0+1] т.е. "C:\Poker\1"
-            parameterValuesObject[i] = Convert.ChangeType(valuePart, param.ParameterType); // пихаем в [0] c конвертацией "C:\Poker\1" -> Object "C:\Poker\1" {System.String DirectoryPath}
+            // пихаем в [0] c конвертацией "C:\Poker\1" -> Object "C:\Poker\1" {System.String DirectoryPath}
+            parameterValuesObject[i] = Convert.ChangeType(valuePart, param.ParameterType); 
         }
         return parameterValuesObject;
     }

@@ -88,7 +88,8 @@ public class DatabaseTests {
         """;
 
     [Test]
-    public void AddHands_AddsHandsToEmptyDatabase_ReturnsNewDatabaseWithHands() {
+    public void 
+    AddHands_AddsHandsToEmptyDatabase_ReturnsNewDatabaseWithHands() {
         var emptyDatabase = Database.CreateEmpty();
         var handsToAdd = TestHandHistories
             .GetLines()
@@ -105,7 +106,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void AddHands_AddsHandsToExistingDatabase_CombinesHands() {
+    public void
+    AddHands_AddsHandsToExistingDatabase_CombinesHands() {
         var handsToAdd = TestHandHistories
             .GetLines()
             .SplitByEmptyLines()
@@ -120,7 +122,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void AddHands_EmptyList_ReturnsUnchangedDatabase() {
+    public void
+    AddHands_EmptyList_ReturnsUnchangedDatabase() {
         var database = Database.CreateEmpty();
         var emptyList = ImmutableList<HandHistory>.Empty;
 
@@ -131,7 +134,8 @@ public class DatabaseTests {
 
    
     [Test]
-    public void GetDatabaseStats_WithHands_ReturnsCorrectCounts() {
+    public void
+    GetDatabaseStats_WithHands_ReturnsCorrectCounts() {
         var handsToAdd = TestHandHistories
             .GetLines()
             .SplitByEmptyLines()
@@ -145,7 +149,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void GetDatabaseStats_EmptyDatabase_ReturnsZeros() {
+    public void
+    GetDatabaseStats_EmptyDatabase_ReturnsZeros() {
         var database = Database.CreateEmpty();
 
         database.HandCount.Assert(0);
@@ -153,7 +158,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void DeleteHandById_EmptyDatabase_Throws() {
+    public void
+    DeleteHandById_EmptyDatabase_Throws() {
         var database = Database.CreateEmpty();
 
         Assert.Throws<InvalidOperationException>(
@@ -161,7 +167,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void DeleteHandById_NonExistingHand_Throws() {
+public void 
+DeleteHandById_NonExistingHand_Throws() {
         var database = Database.CreateEmpty();
 
         Assert.Throws<InvalidOperationException>(
@@ -169,7 +176,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void GetDatabaseStats_AfterDeletingHand_ReturnsUpdatedCounts() {
+    public void 
+    GetDatabaseStats_AfterDeletingHand_ReturnsUpdatedCounts() {
         // Arrange
         var handsToAdd = TestHandHistories
             .GetLines()
@@ -189,7 +197,8 @@ public class DatabaseTests {
 
 
     [Test]
-    public void GetLastHeroHands_ReturnsRequestedNumberOfHands() {
+    public void 
+    GetLastHeroHands_ReturnsRequestedNumberOfHands() {
         var handsToAdd = TestHandHistories
             .GetLines()
             .SplitByEmptyLines()
@@ -206,7 +215,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void GetLastHeroHands_ReturnsHandsInDescendingOrder() {
+    public void 
+    GetLastHeroHands_ReturnsHandsInDescendingOrder() {
         var handsToAdd = TestHandHistories
             .GetLines()
             .SplitByEmptyLines()
@@ -224,7 +234,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void GetLastHeroHands_RequestMoreThanExists_ReturnsAllAvailable() {
+    public void 
+    GetLastHeroHands_RequestMoreThanExists_ReturnsAllAvailable() {
         var handsToAdd = TestHandHistories
             .GetLines()
             .SplitByEmptyLines()
@@ -239,7 +250,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void GetLastHeroHands_EmptyDatabase_ReturnsEmpty() {
+    public void 
+    GetLastHeroHands_EmptyDatabase_ReturnsEmpty() {
         var database = Database.CreateEmpty();
 
         var result = database.GetLastHeroHands(5).ToList();
@@ -248,7 +260,8 @@ public class DatabaseTests {
     }
 
     [Test]
-    public void GetLastHeroHands_HeroCardsArePreserved() {
+    public void 
+    GetLastHeroHands_HeroCardsArePreserved() {
         var handsToAdd = TestHandHistories
             .GetLines()
             .SplitByEmptyLines()
