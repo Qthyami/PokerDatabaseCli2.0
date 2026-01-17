@@ -9,7 +9,6 @@ SymbolAttribute : Attribute {
 public class NameAttribute: Attribute {
     public string Value { get; }
     public NameAttribute(string value) => Value = value;
-   
 }
 
 public class DescriptionAttribute : Attribute {

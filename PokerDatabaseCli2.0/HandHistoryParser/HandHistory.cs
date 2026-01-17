@@ -18,7 +18,6 @@ HandHistory {
     public bool ContainsPlayer(string nickname) => Players.Any(player => player.Nickname == nickname);
     public IEnumerable<string> PlayerNicknames => Players.Select(player => player.Nickname);
 
-
     public bool TryGetHeroPlayer(out SeatLine heroPlayer) {
         heroPlayer = Players.First(player => player.DealtCards.Count > 0);
         return true;

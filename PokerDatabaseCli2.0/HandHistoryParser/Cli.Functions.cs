@@ -23,7 +23,7 @@ public static class CliFunctions {
              GetOverallStatsCommand GetOverallStats => context.ExecuteGetOverallStats(GetOverallStats),
              GetLastHandsCommand GetLastHands => context.ExecuteGetLastHands(GetLastHands),
              ShowDeletedHandsCommand ShowDeletedHands => context.ExecuteGetDeletedHands(ShowDeletedHands),
-             ICommand unknown => context.ExecuteUnknownCommand(command)
+             ICommand Unknown => context.ExecuteUnknownCommand(command)
          };
 
     public static IEnumerable<Type>
@@ -166,14 +166,6 @@ public static class CliFunctions {
         }
         return parameterValuesObject;
     }
-
-
-
-
-
-
-
-
 }
 
 
