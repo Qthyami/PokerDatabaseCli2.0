@@ -1,6 +1,4 @@
 ﻿using NUnit.Framework;
-
-
 namespace PokerDatabaseCli2._0.Tests;
 
 public static class Asserts {

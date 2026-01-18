@@ -1,6 +1,4 @@
-﻿using System.Reflection.Metadata;
-
-namespace PokerDatabaseCli2._0.HandHistoryParser;
+﻿namespace PokerDatabaseCli2._0.HandHistoryParser;
 
 public interface ICommand;
 //Все-таки контекст нужен, и для будующего расширения и просто грязно выглядит обращаться напрямую к базе

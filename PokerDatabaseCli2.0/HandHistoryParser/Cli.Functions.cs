@@ -23,7 +23,7 @@ public static class CliFunctions {
              GetOverallStatsCommand GetOverallStats => context.ExecuteGetOverallStats(GetOverallStats),
              GetLastHandsCommand GetLastHands => context.ExecuteGetLastHands(GetLastHands),
              ShowDeletedHandsCommand ShowDeletedHands => context.ExecuteGetDeletedHands(ShowDeletedHands),
-             ICommand Unknown => context.ExecuteUnknownCommand(command)
+             _ => context.ExecuteUnknownCommand(command)
          };
 
     public static IEnumerable<Type>
@@ -156,13 +156,16 @@ public static class CliFunctions {
 
     private static object?[]
     GetParameterValues(this ParameterInfo[] parameters, string[] commandParts) {
-        // Create an array of constructor parameters, which will have 1 parameter, like DirectoryPath etc, now empty
+        if (commandParts.Length - 1 < parameters.Length)
+            throw new InvalidOperationException(
+                $"Expected {parameters.Length} arguments, got {commandParts.Length - 1}");
+        // Create an array of constructor parameters, which will have 1 parameter, like DirectoryPath, now empty
         var parameterValuesObject = new object?[parameters.Length];
         for (int i = 0; i < parameters.Length; i++) {
             var param = parameters[i]; // сразу первый параметр и будет нужный т.е [0]
             var valuePart = commandParts[i + 1]; // а параметр комманды сидит в [0+1] т.е. "C:\Poker\1"
             // пихаем в [0] c конвертацией "C:\Poker\1" -> Object "C:\Poker\1" {System.String DirectoryPath}
-            parameterValuesObject[i] = Convert.ChangeType(valuePart, param.ParameterType); 
+            parameterValuesObject[i] = Convert.ChangeType(valuePart, param.ParameterType);
         }
         return parameterValuesObject;
     }

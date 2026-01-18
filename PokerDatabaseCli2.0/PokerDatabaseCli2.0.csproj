@@ -11,7 +11,9 @@
     <Using Include="System.Collections.Immutable" />
     <Using Include="PokerDatabaseCli2._0.Common" />
     <Using Include="PokerDatabaseCli2._0.HandHistoryParser" />
-    </ItemGroup>
+    <Using Include="System.Reflection.Metadata;" />
+
+  </ItemGroup>
  
 
 </Project>
