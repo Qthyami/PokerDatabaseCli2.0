@@ -104,7 +104,7 @@ public static class CliFunctions {
     public static string
     GetCommandName(this ICommand command) {
         var type = command.GetType();
-        var nameAttribute = (NameAttribute?)Attribute.GetCustomAttribute(type, typeof(NameAttribute));
+        var nameAttribute = type.GetAttribute<NameAttribute>();
         return nameAttribute?.Value ?? type.Name;
     }
 
@@ -127,13 +127,13 @@ public static class CliFunctions {
     private static Type
     FindCommandType(this string commandName) {
         var type = GetAllCommandsTypes()
-            .FirstOrDefault(t => t.GetCustomAttributes(typeof(NameAttribute), false)
-                .OfType<NameAttribute>()
-                .Any(attr => attr.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)));
-
+            .FirstOrDefault(type => {
+                var attribute= type.GetAttribute<NameAttribute>();
+                return attribute != null && attribute.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase);
+            });
+         
         if (type == null)
             throw new InvalidOperationException($"Unknown command: {commandName}");
-
         return type;
     }
 
