@@ -5,9 +5,9 @@ public interface IResult;
 
 public record CommandContext {
     public Database Database { get; init; }
-    public IResult? Result {get; init;}
+    public IResult? Result { get; init; }
 
-    public CommandContext(Database database,IResult result ) {
+    public CommandContext(Database database, IResult? result) {
         Database = database;
         Result = result;
     }
@@ -31,7 +31,7 @@ public record ShowDeletedHandsCommand() : ICommand;
 //Results
 public record OverallStatsResult(long HandCount, long PlayersCount) : IResult;
 public record LastHandsResult(ImmutableList<(long HandId, SeatLine HeroLine)> LastHands) : IResult;
-public record AddHandsResult(int AddedHandsCount): IResult;
+public record AddHandsResult(int AddedHandsCount) : IResult;
 public record ConsoleResult(string Text) : IResult;
 public record DeleteHandResult(long HandId) : IResult;
 public record DeletedHandsResult(ImmutableList<long> HandId) : IResult;

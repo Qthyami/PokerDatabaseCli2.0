@@ -3,21 +3,19 @@ namespace PokerDatabaseCli2._0.HandHistoryParser;
 
 public record
 Database {
-    public ImmutableList<HandHistory> HandHistories { get; init; }
-    public ImmutableList<long> DeletedHandsIds { get; init; }
+    public ImmutableList<HandHistory> HandHistories { get; init; } = ImmutableList<HandHistory>.Empty;
 
-    public static Database CreateEmpty() => new Database {
-        HandHistories = ImmutableList<HandHistory>.Empty,
-        DeletedHandsIds = ImmutableList<long>.Empty
-    };
+    public ImmutableList<long> DeletedHandsIds { get; init; } = ImmutableList<long>.Empty;
 
+
+    public static Database CreateEmpty() => new Database();
     public long HandCount => HandHistories.Count;
 
     public long PlayersCount => HandHistories
         .SelectMany(hand => hand.Players)
         .DistinctBy(playerLine => playerLine.Nickname)
         .Count();
-        
+
     //ЭТА ФУНКЦИЯ ОПРЕДЕЛЯЕТ КТО HERO ПО ПОСЛЕДНЕЙ РАЗДАЧЕ И ВОЗВРАЩАЕТ ПОСЛЕДНИЕ N РАЗДАЧ С ЕГО УЧАСТИЕМ
     //ЕСЛИ В ПРЕДПОСЛЕДНЕЙ РАЗДАЧЕ HERO ВНЕЗАПНО ДРУГОЙ - ОНА ЭТУ РАЗДАЧУ ПРОПУСТИТ И ВСЕ РАВНО НАБЕРЕТ N РАЗДАЧ
     //ПРОСТО ТАК НАБРАТЬ (required) ПОСЛЕДНИХ РАЗДАЧ НЕЛЬЗЯ.

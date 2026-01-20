@@ -165,8 +165,8 @@ public class DatabaseTests {
     }
 
     [Test]
-public void 
-DeleteHandById_NonExistingHand_Throws() {
+    public void 
+    DeleteHandById_NonExistingHand_Throws() {
         var database = Database.CreateEmpty();
 
         Assert.Throws<InvalidOperationException>(

@@ -39,14 +39,14 @@ public static class CliFunctions {
         var hands = command.DirectoryPath.GetHandHistoriesFromDirectory().ToImmutableList();
         var (newDatabase, addedHandsCount) = context.Database.AddHands(hands);
         var result = new AddHandsResult(addedHandsCount);
-        return context with { Database = newDatabase, Result = result};
+        return context with { Database = newDatabase, Result = result };
     }
 
     public static CommandContext
     ExecuteDeleteHand(this CommandContext context, DeleteHandCommand command) {
         var newDatabase = context.Database.DeleteHandById(command.HandId);
-        var result =new DeleteHandResult(command.HandId);
-        return context with { Database = newDatabase,Result = result };
+        var result = new DeleteHandResult(command.HandId);
+        return context with { Database = newDatabase, Result = result };
     }
 
     public static CommandContext
@@ -60,8 +60,8 @@ public static class CliFunctions {
         var lasthands = context.Database.GetLastHeroHands(requiredHands: command.HandCount).ToImmutableList();
         var result = new LastHandsResult(lasthands);
         return context with { Result = result };
-        }
-    
+    }
+
     public static CommandContext
     ExecuteGetDeletedHands(this CommandContext context, ShowDeletedHandsCommand command) {
         var result = new DeletedHandsResult(context.Database.DeletedHandsIds);
@@ -76,7 +76,7 @@ public static class CliFunctions {
 
     public static void
     RunCli() {
-        var context = new CommandContext(Database.CreateEmpty(), result:null);
+        var context = new CommandContext(Database.CreateEmpty(), result: null);
         Console.WriteLine("Welcome to Poker Database CLI! \n");
         Console.WriteLine("Type command (or 'exit')");
         while (true) {
@@ -119,10 +119,10 @@ public static class CliFunctions {
     FindCommandType(this string commandName) {
         var type = GetAllCommandsTypes()
             .FirstOrDefault(type => {
-                var attribute= type.GetAttribute<NameAttribute>();
+                var attribute = type.GetAttribute<NameAttribute>();
                 return attribute != null && attribute.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase);
             });
-         
+
         if (type == null)
             throw new InvalidOperationException($"Unknown command: {commandName}");
         return type;
@@ -162,7 +162,7 @@ public static class CliFunctions {
     }
 
     public static void
-    PrintResult (this CommandContext context) {
+    PrintResult(this CommandContext context) {
         if (context.Result == null) {
             Console.WriteLine("No result to display.");
             return;
