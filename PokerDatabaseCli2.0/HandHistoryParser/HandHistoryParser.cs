@@ -3,20 +3,20 @@
 public static class
 PokerStarsHandHistoryParser {
     public static IEnumerable<HandHistory>
-    GetHandHistoriesFromDirectory(this string directory) => 
+    GetHandHistoriesFromDirectory(this string directory) =>
         directory
             .VerifyDirectoryExists()
             .GetAllDirectoryFiles()
             .WithFileExtension(".txt")
             .SelectMany(file => file.GetHandHistoriesFromFile());
-    
+
     public static IEnumerable<HandHistory>
-    GetHandHistoriesFromFile(this string file) => 
+    GetHandHistoriesFromFile(this string file) =>
         file.GetHandHistoriesTextFromFile().Select(text => text.ParseHandHistory());
-        
-  public static IEnumerable<string>
-    GetHandHistoriesTextFromFile(this string filePath) =>
-        filePath.GetAllTextFromFile().GetLines().SplitByEmptyLines();
+
+    public static IEnumerable<string>
+      GetHandHistoriesTextFromFile(this string filePath) =>
+          filePath.GetAllTextFromFile().GetLines().SplitByEmptyLines();
 
     public static HandHistory
     ParseHandHistory(this string handHistoryText) {
@@ -42,7 +42,7 @@ PokerStarsHandHistoryParser {
         if (!parser.TrySkipUntil("PokerStars Hand #"))
             throw new FormatException("Not a valid PokerStars hand history.");
         return parser.Skip("PokerStars Hand #".Length).ReadLong();
-        }
+    }
 
     public static IEnumerable<(int seatNumber, string nickName, double stackSize)>
     ParsePlayers(this FluentParser parser) {

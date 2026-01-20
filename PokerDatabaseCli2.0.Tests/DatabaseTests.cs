@@ -191,7 +191,6 @@ DeleteHandById_NonExistingHand_Throws() {
         updatedDatabase.HandCount.Assert(handsToAdd.Count - 1);
     }
 
-
     [Test]
     public void 
     GetLastHeroHands_ReturnsRequestedNumberOfHands() {

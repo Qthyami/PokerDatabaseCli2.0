@@ -14,7 +14,8 @@ public static class Collections {
         return false;
     }
 
-    public static IEnumerable<T> TakeWhileAccum<T>(this IEnumerable<T> source, Func<T, bool> predicate, int maxCount) {
+    public static IEnumerable<T>
+    TakeWhileAccum<T>(this IEnumerable<T> source, Func<T, bool> predicate, int maxCount) {
         int count = 0;
         foreach (var item in source) {
             if (!predicate(item) || count >= maxCount)

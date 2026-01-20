@@ -99,13 +99,6 @@ public static class CliFunctions {
     private static bool ShouldExit(string? input) =>
     input!.Trim().Equals("exit", StringComparison.OrdinalIgnoreCase);
 
-    public static string
-    GetCommandName(this ICommand command) {
-        var type = command.GetType();
-        var nameAttribute = type.GetAttribute<NameAttribute>();
-        return nameAttribute?.Value ?? type.Name;
-    }
-
     private static void
     ValidateInput(this string input) {
         if (string.IsNullOrWhiteSpace(input))
@@ -176,7 +169,7 @@ public static class CliFunctions {
         }
         switch (context.Result) {
             case AddHandsResult addHandsResult:
-                Console.WriteLine($"Added {addHandsResult.AddedHandsCount} hands");
+                Console.WriteLine($"{addHandsResult.AddedHandsCount} hands imported into the database");
                 break;
             case DeleteHandResult deleteHandResult:
                 Console.WriteLine($"Hand with ID: {deleteHandResult.HandId} has been deleted.");
