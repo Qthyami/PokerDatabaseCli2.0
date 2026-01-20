@@ -1,13 +1,25 @@
 ﻿namespace PokerDatabaseCli2._0.HandHistoryParser;
 
 public interface ICommand;
-//Все-таки контекст нужен, и для будующего расширения и просто грязно выглядит обращаться напрямую к базе
+public interface IResult;
+
 public record CommandContext {
     public Database Database { get; init; }
-    public CommandContext(Database database) {
+    public IResult? Result {get; init;}
+
+    public CommandContext(Database database,IResult result ) {
         Database = database;
+        Result = result;
     }
 }
+//
+public record OverallStatsResult(long HandCount, long PlayersCount) : IResult;
+public record LastHandsResult(ImmutableList<(long HandId, SeatLine HeroLine)> LastHands) : IResult;
+public record AddHandsResult(int AddedHandsCount): IResult;
+public record ConsoleResult(string Text) : IResult;
+public record DeleteHandResult(long HandId) : IResult;
+public record DeletedHandsResult(ImmutableList<long> HandId) : IResult;
+public record UnknownCommandResult(string CommandName) : IResult;
 
 [Name("ShowStats"), Description("Counting all hands and players in the database.")]
 public record GetOverallStatsCommand() : ICommand;

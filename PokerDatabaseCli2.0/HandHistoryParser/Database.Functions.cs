@@ -2,11 +2,13 @@
 namespace PokerDatabaseCli2._0.HandHistoryParser;
 //ФУНКЦИИ-РЕДЬЮСЕРЫ ДЛЯ DATABASE ЗДЕСЬ, А QERRY-ФУНКЦИИ - В САМОЙ DATABASE
 public static class DatabaseFunctions {
-    public static Database
+    public static (Database NewDatabase, int AddedHandsCount)
     AddHands(this Database database, ImmutableList<HandHistory> handsToAdd){
         var existingHandIds = database.HandHistories.Select(hand => hand.HandId).ToHashSet();
-        var newHands= handsToAdd.Where(hand => !existingHandIds.Contains(hand.HandId)).ToImmutableList();
-        return database with { HandHistories = database.HandHistories.AddRange(newHands)};
+        var newHands = handsToAdd.Where(hand => !existingHandIds.Contains(hand.HandId)).ToImmutableList();
+        var newDatabase = database with { HandHistories = database.HandHistories.AddRange(newHands)};
+        //It's necessary to actually show how many hands were imported, duplicates are skipped
+        return (NewDatabase: newDatabase, AddedHandsCount: newHands.Count);
     }
     
     public static Database

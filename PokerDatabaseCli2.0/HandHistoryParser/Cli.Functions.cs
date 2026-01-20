@@ -37,47 +37,46 @@ public static class CliFunctions {
     public static CommandContext
     ExecuteAddHands(this CommandContext context, AddHandsCommand command) {
         var hands = command.DirectoryPath.GetHandHistoriesFromDirectory().ToImmutableList();
-        var newDatabase = context.Database.AddHands(hands);
-        return context with { Database = newDatabase };
+        var (newDatabase, addedHandsCount) = context.Database.AddHands(hands);
+        var result = new AddHandsResult(addedHandsCount);
+        return context with { Database = newDatabase, Result = result};
     }
 
     public static CommandContext
     ExecuteDeleteHand(this CommandContext context, DeleteHandCommand command) {
         var newDatabase = context.Database.DeleteHandById(command.HandId);
-        Console.WriteLine($"Hand with number: {command.HandId} has been deleted.");
-        return context with { Database = newDatabase };
+        var result =new DeleteHandResult(command.HandId);
+        return context with { Database = newDatabase,Result = result };
     }
 
     public static CommandContext
     ExecuteGetOverallStats(this CommandContext context, GetOverallStatsCommand command) {
-        Console.WriteLine($"Total Hands: {context.Database.HandCount}, Total Players: {context.Database.PlayersCount} in the database");
-        return context;
-    }
-    public static CommandContext
-    ExecuteGetLastHands(this CommandContext context, GetLastHandsCommand command) {
-        var lasthands = context.Database.GetLastHeroHands(requiredHands: command.HandCount);
-        foreach (var (handId, heroSeatLine) in lasthands) {
-            var cards = string.Join(" ", heroSeatLine.DealtCards.Select(card => card.ToString()));
-            Console.WriteLine($"HandId: {handId}, Hero nickname: {heroSeatLine.Nickname}, Cards: {cards}, StackSize: {heroSeatLine.StackSize}");
-        }
-        return context;
+        var result = new OverallStatsResult(context.Database.HandCount, context.Database.PlayersCount);
+        return context with { Result = result };
     }
 
     public static CommandContext
+    ExecuteGetLastHands(this CommandContext context, GetLastHandsCommand command) {
+        var lasthands = context.Database.GetLastHeroHands(requiredHands: command.HandCount).ToImmutableList();
+        var result = new LastHandsResult(lasthands);
+        return context with { Result = result };
+        }
+    
+    public static CommandContext
     ExecuteGetDeletedHands(this CommandContext context, ShowDeletedHandsCommand command) {
-        Console.WriteLine($"Deleted hands Numbers:{string.Join(", ", context.Database.DeletedHandsIds)}");
-        return context;
+        var result = new DeletedHandsResult(context.Database.DeletedHandsIds);
+        return context with { Result = result };
     }
 
     public static CommandContext
     ExecuteUnknownCommand(this CommandContext context, ICommand command) {
-        Console.WriteLine($"Unknown command: {command.GetType().Name}");
-        return context;
+        var result = new UnknownCommandResult(command.GetType().Name);
+        return context with { Result = result };
     }
 
     public static void
     RunCli() {
-        var context = new CommandContext(Database.CreateEmpty());
+        var context = new CommandContext(Database.CreateEmpty(), result:null);
         Console.WriteLine("Welcome to Poker Database CLI! \n");
         Console.WriteLine("Type command (or 'exit')");
         while (true) {
@@ -88,9 +87,8 @@ public static class CliFunctions {
                 break;
             try {
                 var command = input.ParseCommand();
-                context = command.ExecuteCommand(context); //ExecuteCommand(command, context) читабельнее
-                //проблема такого синтаксиса, что читающий не понимает, есть ли у command метод ExecuteCommand
-                // или это у ExecuteCommand 2 параметра
+                context = command.ExecuteCommand(context);
+                context.PrintResult();
             }
             catch (Exception ex) {
                 Console.WriteLine($"Error: {ex.Message}");
@@ -162,12 +160,47 @@ public static class CliFunctions {
         // Create an array of constructor parameters, which will have 1 parameter, like DirectoryPath, now empty
         var parameterValuesObject = new object?[parameters.Length];
         for (int i = 0; i < parameters.Length; i++) {
-            var param = parameters[i]; // сразу первый параметр и будет нужный т.е [0]
+            var parameterFound = parameters[i]; // сразу первый параметр и будет нужный т.е [0], цикла не будет
             var valuePart = commandParts[i + 1]; // а параметр комманды сидит в [0+1] т.е. "C:\Poker\1"
             // пихаем в [0] c конвертацией "C:\Poker\1" -> Object "C:\Poker\1" {System.String DirectoryPath}
-            parameterValuesObject[i] = Convert.ChangeType(valuePart, param.ParameterType);
+            parameterValuesObject[i] = Convert.ChangeType(valuePart, parameterFound.ParameterType);
         }
         return parameterValuesObject;
+    }
+
+    public static void
+    PrintResult (this CommandContext context) {
+        if (context.Result == null) {
+            Console.WriteLine("No result to display.");
+            return;
+        }
+        switch (context.Result) {
+            case AddHandsResult addHandsResult:
+                Console.WriteLine($"Added {addHandsResult.AddedHandsCount} hands");
+                break;
+            case DeleteHandResult deleteHandResult:
+                Console.WriteLine($"Hand with ID: {deleteHandResult.HandId} has been deleted.");
+                break;
+            case OverallStatsResult overallStatsResult:
+                Console.WriteLine($"Total Hands: {overallStatsResult.HandCount}, Total Players: {overallStatsResult.PlayersCount} in the database");
+                break;
+            case LastHandsResult lastHandsResult:
+                foreach (var hand in lastHandsResult.LastHands) {
+                    var heroSeatLine = hand.HeroLine;
+                    var cards = string.Join(", ", heroSeatLine.DealtCards);
+                    Console.WriteLine($"HandId: {hand.HandId}, Hero nickname: {heroSeatLine.Nickname}, Cards: {cards}, StackSize: {heroSeatLine.StackSize}");
+                }
+                break;
+            case DeletedHandsResult deletedHandsResult:
+                Console.WriteLine($"Deleted hands IDs: {string.Join(", ", deletedHandsResult.HandId)}");
+                break;
+            case UnknownCommandResult unknownCommandResult:
+                Console.WriteLine($"Unknown command: {unknownCommandResult.CommandName}");
+                break;
+            default:
+                Console.WriteLine("Unknown result type.");
+                break;
+        }
     }
 }
 
