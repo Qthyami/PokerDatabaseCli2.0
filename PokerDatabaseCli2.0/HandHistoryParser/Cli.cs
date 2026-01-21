@@ -1,16 +1,24 @@
-﻿namespace PokerDatabaseCli2._0.HandHistoryParser;
+﻿using static PokerDatabaseCli2._0.HandHistoryParser.CliFunctions;
+
+namespace PokerDatabaseCli2._0.HandHistoryParser;
 
 public interface ICommand;
 public interface IResult;
 
-public record CommandContext {
+public record CommandEnvironment {
     public Database Database { get; init; }
+    
     public IResult? Result { get; init; }
 
-    public CommandContext(Database database, IResult? result) {
+    public CommandEnvironment(Database database) {
         Database = database;
-        Result = result;
+        
     }
+
+    public CommandEnvironment
+    WithDatabase(Database database) => this with { Database = database };
+    public void
+    WriteOutput (string message)=> OutputDestination.WriteOutput(message);
 }
 
 [Name("ShowStats"), Description("Counting all hands and players in the database.")]
@@ -28,14 +36,6 @@ public record GetLastHandsCommand(int HandCount = 10) : ICommand;
 [Name("ShowDeletedHands"), Description("Displays all deleted hand IDs from the database.")]
 public record ShowDeletedHandsCommand() : ICommand;
 
-//Results
-public record OverallStatsResult(long HandCount, long PlayersCount) : IResult;
-public record LastHandsResult(ImmutableList<(long HandId, SeatLine HeroLine)> LastHands) : IResult;
-public record AddHandsResult(int AddedHandsCount) : IResult;
-public record ConsoleResult(string Text) : IResult;
-public record DeleteHandResult(long HandId) : IResult;
-public record DeletedHandsResult(ImmutableList<long> HandId) : IResult;
-public record UnknownCommandResult(string CommandName) : IResult;
 
 
 

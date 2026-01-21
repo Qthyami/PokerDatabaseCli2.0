@@ -32,6 +32,20 @@ public static class DatabaseFunctions {
             .Where(hand => !existingHandIds.Contains(hand.HandId))
             .ToImmutableList();
     }
+
+    public static IEnumerable<HandHistory>
+    OrderByHandIdDescending(this IEnumerable<HandHistory> hands) =>
+        hands.OrderByDescending(hand => hand.HandId);
+        
+    public static IEnumerable<HandHistory>
+    WithPlayer(this IEnumerable<HandHistory> hands, string playerNickname) {
+         foreach (var hand in hands) {
+            if (!hand.ContainsPlayer(playerNickname))
+                continue;
+            yield return (hand);
+    }
+       
+}
 }
 
 

@@ -4,6 +4,12 @@ using System.Reflection;
 namespace PokerDatabaseCli2._0.HandHistoryParser;
 
 public static class CliFunctions {
+    public static IEnumerable<Type>
+      AllCommandsTypes = typeof(CliFunctions)
+              .Assembly
+              .GetTypes()
+              .Where(type => typeof(ICommand).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+
 
     public static ICommand
     ParseCommand(this string inputCommand) {
@@ -15,68 +21,68 @@ public static class CliFunctions {
         return CreateCommandInstance(commandType, commandParts);
     }
 
-    public static CommandContext
-    ExecuteCommand(this ICommand command, CommandContext context) =>
-         command switch {
-             AddHandsCommand AddHandsFromDirectory => context.ExecuteAddHands(AddHandsFromDirectory),
-             DeleteHandCommand DeleteHand => context.ExecuteDeleteHand(DeleteHand),
-             GetOverallStatsCommand GetOverallStats => context.ExecuteGetOverallStats(GetOverallStats),
-             GetLastHandsCommand GetLastHands => context.ExecuteGetLastHands(GetLastHands),
-             ShowDeletedHandsCommand ShowDeletedHands => context.ExecuteGetDeletedHands(ShowDeletedHands),
-             _ => context.ExecuteUnknownCommand(command)
+    public static CommandEnvironment
+    ExecuteCommand(this ICommand execuingCommand, CommandEnvironment context) =>
+         execuingCommand switch {
+             AddHandsCommand command => context.ExecuteAddHands(command),
+             DeleteHandCommand command => context.ExecuteDeleteHand(command),
+             GetOverallStatsCommand command => context.ExecuteGetOverallStats(command),
+             GetLastHandsCommand command => context.ExecuteGetLastHands(command),
+             ShowDeletedHandsCommand command => context.ExecuteGetDeletedHands(command),
+             _ => context.ExecuteUnknownCommand(execuingCommand)
          };
 
-    public static IEnumerable<Type>
-    GetAllCommandsTypes() {
-        return typeof(CliFunctions)
-            .Assembly
-            .GetTypes()
-            .Where(type => typeof(ICommand).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
-    }
-
-    public static CommandContext
-    ExecuteAddHands(this CommandContext context, AddHandsCommand command) {
+    public static CommandEnvironment
+    ExecuteAddHands(this CommandEnvironment context, AddHandsCommand command) {
         var hands = command.DirectoryPath.GetHandHistoriesFromDirectory().ToImmutableList();
         var (newDatabase, addedHandsCount) = context.Database.AddHands(hands);
-        var result = new AddHandsResult(addedHandsCount);
-        return context with { Database = newDatabase, Result = result };
+        //var result = new AddHandsResult(addedHandsCount);
+        context.WriteOutput($"{addedHandsCount} hands imported into the database");
+        return context.WithDatabase(newDatabase);
     }
 
-    public static CommandContext
-    ExecuteDeleteHand(this CommandContext context, DeleteHandCommand command) {
+    public static CommandEnvironment
+    ExecuteDeleteHand(this CommandEnvironment context, DeleteHandCommand command) {
         var newDatabase = context.Database.DeleteHandById(command.HandId);
-        var result = new DeleteHandResult(command.HandId);
-        return context with { Database = newDatabase, Result = result };
+        context.WriteOutput($"Hand with ID: {command.HandId} has been deleted.");
+        return context.WithDatabase(newDatabase);
+
     }
 
-    public static CommandContext
-    ExecuteGetOverallStats(this CommandContext context, GetOverallStatsCommand command) {
-        var result = new OverallStatsResult(context.Database.HandCount, context.Database.PlayersCount);
-        return context with { Result = result };
+    public static CommandEnvironment
+    ExecuteGetOverallStats(this CommandEnvironment context, GetOverallStatsCommand command) {
+        context.WriteOutput($"Total Hands: {context.Database.HandCount}, Total Players: {context.Database.PlayersCount} in the database");
+        return context;
     }
 
-    public static CommandContext
-    ExecuteGetLastHands(this CommandContext context, GetLastHandsCommand command) {
-        var lasthands = context.Database.GetLastHeroHands(requiredHands: command.HandCount).ToImmutableList();
-        var result = new LastHandsResult(lasthands);
-        return context with { Result = result };
+    public static CommandEnvironment
+    ExecuteGetLastHands(this CommandEnvironment context, GetLastHandsCommand command) {
+        foreach (var (hand, hero) in context.Database.GetLastHeroHandsWithHero(command.HandCount)) {
+            context.WriteOutput(
+                $"Hand {hand.HandId} | " +
+                $"Hero: {hero.Nickname} | " +
+                $"Cards: {string.Join(", ", hero.DealtCards)} | " +
+                $"Stack: {hero.StackSize}"
+            );
+        }
+        return context;
     }
 
-    public static CommandContext
-    ExecuteGetDeletedHands(this CommandContext context, ShowDeletedHandsCommand command) {
-        var result = new DeletedHandsResult(context.Database.DeletedHandsIds);
-        return context with { Result = result };
+    public static CommandEnvironment
+    ExecuteGetDeletedHands(this CommandEnvironment context, ShowDeletedHandsCommand command) {
+        context.WriteOutput($"Deleted hands IDs: {string.Join(", ", context.Database.DeletedHandsIds)}");
+        return context;
     }
 
-    public static CommandContext
-    ExecuteUnknownCommand(this CommandContext context, ICommand command) {
-        var result = new UnknownCommandResult(command.GetType().Name);
-        return context with { Result = result };
+    public static CommandEnvironment
+    ExecuteUnknownCommand(this CommandEnvironment context, ICommand command) {
+        context.WriteOutput($"Unknown command: {command}");
+        return context;
     }
 
     public static void
     RunCli() {
-        var context = new CommandContext(Database.CreateEmpty(), result: null);
+        var context = new CommandEnvironment(Database.Empty());
         Console.WriteLine("Welcome to Poker Database CLI! \n");
         Console.WriteLine("Type command (or 'exit')");
         while (true) {
@@ -88,7 +94,6 @@ public static class CliFunctions {
             try {
                 var command = input.ParseCommand();
                 context = command.ExecuteCommand(context);
-                context.PrintResult();
             }
             catch (Exception ex) {
                 Console.WriteLine($"Error: {ex.Message}");
@@ -116,12 +121,12 @@ public static class CliFunctions {
     }
 
     private static Type
-    FindCommandType(this string commandName) {
-        var type = GetAllCommandsTypes()
-            .FirstOrDefault(type => {
-                var attribute = type.GetAttribute<NameAttribute>();
-                return attribute != null && attribute.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase);
-            });
+   FindCommandType(this string commandName) {
+        var type = AllCommandsTypes
+            .FirstOrDefault(type =>
+                type.TryGetAttribute<NameAttribute>(out var attr)
+                && attr.Value.Equals(commandName, StringComparison.OrdinalIgnoreCase)
+            );
 
         if (type == null)
             throw new InvalidOperationException($"Unknown command: {commandName}");
@@ -161,41 +166,13 @@ public static class CliFunctions {
         return parameterValuesObject;
     }
 
-    public static void
-    PrintResult(this CommandContext context) {
-        if (context.Result == null) {
-            Console.WriteLine("No result to display.");
-            return;
-        }
-        switch (context.Result) {
-            case AddHandsResult addHandsResult:
-                Console.WriteLine($"{addHandsResult.AddedHandsCount} hands imported into the database");
-                break;
-            case DeleteHandResult deleteHandResult:
-                Console.WriteLine($"Hand with ID: {deleteHandResult.HandId} has been deleted.");
-                break;
-            case OverallStatsResult overallStatsResult:
-                Console.WriteLine($"Total Hands: {overallStatsResult.HandCount}, Total Players: {overallStatsResult.PlayersCount} in the database");
-                break;
-            case LastHandsResult lastHandsResult:
-                foreach (var hand in lastHandsResult.LastHands) {
-                    var heroSeatLine = hand.HeroLine;
-                    var cards = string.Join(", ", heroSeatLine.DealtCards);
-                    Console.WriteLine($"HandId: {hand.HandId}, Hero nickname: {heroSeatLine.Nickname}, Cards: {cards}, StackSize: {heroSeatLine.StackSize}");
-                }
-                break;
-            case DeletedHandsResult deletedHandsResult:
-                Console.WriteLine($"Deleted hands IDs: {string.Join(", ", deletedHandsResult.HandId)}");
-                break;
-            case UnknownCommandResult unknownCommandResult:
-                Console.WriteLine($"Unknown command: {unknownCommandResult.CommandName}");
-                break;
-            default:
-                Console.WriteLine("Unknown result type.");
-                break;
-        }
+    public static class OutputDestination {
+        public static Action<string> WriteOutput = Console.WriteLine;
     }
 }
+
+
+
 
 
 

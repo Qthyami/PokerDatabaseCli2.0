@@ -90,7 +90,7 @@ public class DatabaseTests {
     [Test]
     public void 
     AddHands_AddsHandsToEmptyDatabase_ReturnsNewDatabaseWithHands() {
-        var emptyDatabase = Database.CreateEmpty();
+        var emptyDatabase = Database.Empty();
         var handsToAdd = TestHandHistories
             .GetLines()
             .SplitByEmptyLines()
@@ -114,7 +114,7 @@ public class DatabaseTests {
             .Select(text => text.ParseHandHistory())
             .ToImmutableList();
 
-        var (databaseWithOneHand, _) = Database.CreateEmpty().AddHands(handsToAdd.Take(1).ToImmutableList());
+        var (databaseWithOneHand, _) = Database.Empty().AddHands(handsToAdd.Take(1).ToImmutableList());
         var (result, _) = databaseWithOneHand.AddHands(handsToAdd.Skip(1).ToImmutableList());
 
         result.HandHistories.AssertCount(3);
@@ -123,7 +123,7 @@ public class DatabaseTests {
     [Test]
     public void
     AddHands_EmptyList_ReturnsUnchangedDatabase() {
-        var database = Database.CreateEmpty();
+        var database = Database.Empty();
         var emptyList = ImmutableList<HandHistory>.Empty;
         var (result, _) = database.AddHands(emptyList);
 
@@ -140,7 +140,7 @@ public class DatabaseTests {
             .Select(text => text.ParseHandHistory())
             .ToImmutableList();
 
-        var (database, _) = Database.CreateEmpty().AddHands(handsToAdd);
+        var (database, _) = Database.Empty().AddHands(handsToAdd);
 
         database.HandCount.Assert(3);
         database.PlayersCount.Assert(4);
@@ -149,7 +149,7 @@ public class DatabaseTests {
     [Test]
     public void
     GetDatabaseStats_EmptyDatabase_ReturnsZeros() {
-        var database = Database.CreateEmpty();
+        var database = Database.Empty();
 
         database.HandCount.Assert(0);
         database.PlayersCount.Assert(0);
@@ -158,7 +158,7 @@ public class DatabaseTests {
     [Test]
     public void
     DeleteHandById_EmptyDatabase_Throws() {
-        var database = Database.CreateEmpty();
+        var database = Database.Empty();
 
         Assert.Throws<InvalidOperationException>(
             () => database.DeleteHandById(123456L));
@@ -167,7 +167,7 @@ public class DatabaseTests {
     [Test]
     public void 
     DeleteHandById_NonExistingHand_Throws() {
-        var database = Database.CreateEmpty();
+        var database = Database.Empty();
 
         Assert.Throws<InvalidOperationException>(
             () => database.DeleteHandById(999999999L));
@@ -185,7 +185,7 @@ public class DatabaseTests {
 
         var existingHandId = handsToAdd[0].HandId;
 
-        var (database, addedHandsCount) = Database.CreateEmpty().AddHands(handsToAdd);
+        var (database, addedHandsCount) = Database.Empty().AddHands(handsToAdd);
         var updatedDatabase = database.DeleteHandById(existingHandId);
 
         updatedDatabase.HandCount.Assert(handsToAdd.Count - 1);
@@ -200,12 +200,14 @@ public class DatabaseTests {
             .Select(text => text.ParseHandHistory())
             .ToImmutableList();
 
-        var (database, _) = Database.CreateEmpty().AddHands(handsToAdd);
+        var (database, _) = Database.Empty().AddHands(handsToAdd);
         var result = database.GetLastHeroHands(2).ToList();
 
         result.AssertCount(2);
-        result[0].heroLine.Nickname.Assert("LamanJohn");
-        result[1].heroLine.Nickname.Assert("LamanJohn");
+        result[0].TryGetHeroPlayer(out var hero0).Assert(true);
+        hero0.Nickname.Assert("LamanJohn");
+        result[1].TryGetHeroPlayer(out var hero1).Assert(true);
+        hero1.Nickname.Assert("LamanJohn");
     }
 
     [Test]
@@ -217,7 +219,7 @@ public class DatabaseTests {
             .Select(text => text.ParseHandHistory())
             .ToImmutableList();
 
-        var (database, _) = Database.CreateEmpty().AddHands(handsToAdd);
+        var (database, _) = Database.Empty().AddHands(handsToAdd);
         var result = database.GetLastHeroHands(3).ToList();
 
         result.AssertCount(3);
@@ -235,7 +237,7 @@ public class DatabaseTests {
             .Select(text => text.ParseHandHistory())
             .ToImmutableList();
 
-        var (database, _) = Database.CreateEmpty().AddHands(handsToAdd);
+        var (database, _) = Database.Empty().AddHands(handsToAdd);
         var result = database.GetLastHeroHands(100).ToList();
 
         result.AssertCount(3);
@@ -244,7 +246,7 @@ public class DatabaseTests {
     [Test]
     public void 
     GetLastHeroHands_EmptyDatabase_ReturnsEmpty() {
-        var database = Database.CreateEmpty();
+        var database = Database.Empty();
         var result = database.GetLastHeroHands(5).ToList();
 
         result.AssertCount(0);
@@ -259,11 +261,12 @@ public class DatabaseTests {
             .Select(text => text.ParseHandHistory())
             .ToImmutableList();
 
-        var (database, _) = Database.CreateEmpty().AddHands(handsToAdd);
+        var (database, _) = Database.Empty().AddHands(handsToAdd);
         var result = database.GetLastHeroHands(1).ToList();
 
-        result[0].heroLine.DealtCards.AssertCount(2);
-        result[0].heroLine.DealtCards[0].AssertCard(CardRank.Four, Suit.Clubs);
-        result[0].heroLine.DealtCards[1].AssertCard(CardRank.Five, Suit.Hearts);
+        result[0].TryGetHeroPlayer(out var heroPlayer).Assert(true);
+        heroPlayer.DealtCards.AssertCount(2);
+        heroPlayer.DealtCards[0].AssertCard(CardRank.Four, Suit.Clubs);
+        heroPlayer.DealtCards[1].AssertCard(CardRank.Five, Suit.Hearts);
     }
 }

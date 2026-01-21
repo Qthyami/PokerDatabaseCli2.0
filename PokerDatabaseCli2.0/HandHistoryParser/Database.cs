@@ -4,11 +4,11 @@ namespace PokerDatabaseCli2._0.HandHistoryParser;
 public record
 Database {
     public ImmutableList<HandHistory> HandHistories { get; init; } = ImmutableList<HandHistory>.Empty;
-
     public ImmutableList<long> DeletedHandsIds { get; init; } = ImmutableList<long>.Empty;
+    public string HeroNickname { get; init; } = string.Empty;
 
 
-    public static Database CreateEmpty() => new Database();
+    public static Database Empty() => new Database();
     public long HandCount => HandHistories.Count;
 
     public long PlayersCount => HandHistories
@@ -16,39 +16,44 @@ Database {
         .DistinctBy(playerLine => playerLine.Nickname)
         .Count();
 
-    //ЭТА ФУНКЦИЯ ОПРЕДЕЛЯЕТ КТО HERO ПО ПОСЛЕДНЕЙ РАЗДАЧЕ И ВОЗВРАЩАЕТ ПОСЛЕДНИЕ N РАЗДАЧ С ЕГО УЧАСТИЕМ
-    //ЕСЛИ В ПРЕДПОСЛЕДНЕЙ РАЗДАЧЕ HERO ВНЕЗАПНО ДРУГОЙ - ОНА ЭТУ РАЗДАЧУ ПРОПУСТИТ И ВСЕ РАВНО НАБЕРЕТ N РАЗДАЧ
-    //ПРОСТО ТАК НАБРАТЬ (required) ПОСЛЕДНИХ РАЗДАЧ НЕЛЬЗЯ.
-    //ХОТЯ НА МАЙНИНГЕ РАБОТАТЬ НЕ БУДЕТ, ТАМ НЕ БУДЕТ DealtCards
-    public IEnumerable<(long HandId, SeatLine heroLine)>
+ 
+    public IEnumerable<HandHistory>
     GetLastHeroHands(int requiredHands) {
-        var heroNickname = DefineHeroNickname();
-
+        if (!TryGetHeroNickname(out var heroNickname))
+            return Enumerable.Empty<HandHistory>();
         if (heroNickname == null)
-            return Enumerable.Empty<(long HandId, SeatLine heroLine)>();
+            return Enumerable.Empty<HandHistory>();
 
-        return GetHeroHands(heroNickname)
-            .OrderByDescending(hand => hand.HandId)
+        return GetPlayerHands(heroNickname)
+            .OrderByHandIdDescending()
             .Take(requiredHands);
     }
 
-    public IEnumerable<(long HandId, SeatLine heroLine)>
-    GetHeroHands(string heroName) {
-        foreach (var hand in HandHistories) {
-            if (!hand.ContainsPlayer(heroName))
-                continue;
-            yield return (hand.HandId, hand.GetPlayer(heroName));
+    public IEnumerable<HandHistory>
+    GetPlayerHands(string heroName) {
+        return HandHistories.WithPlayer(heroName);
+
+    }
+    
+    public bool
+    TryGetHeroNickname(out string? result) {
+        foreach (var hand in HandHistories.OrderByDescending(hand => hand.HandId)) {
+            if (hand.TryGetHeroPlayer(out var heroLine)) {
+                result = heroLine.Nickname;
+                return true;
+            }
         }
+        result = default;
+        return false;
     }
 
-    public string?
-    DefineHeroNickname() {
-        return HandHistories
-            .OrderByDescending(hand => hand.HandId)
-            .Select(hand => {
-                hand.TryGetHeroPlayer(out var heroLine);
-                return heroLine?.Nickname;
-            })
-            .FirstOrDefault(nickname => nickname != null);
-    }
+    public IEnumerable<(HandHistory Hand, HandHistoryPlayer Hero)>
+GetLastHeroHandsWithHero(int requiredHands) {
+    if (!TryGetHeroNickname(out var heroNickname) || heroNickname is null)
+        return Enumerable.Empty<(HandHistory, HandHistoryPlayer)>();
+
+    return GetLastHeroHands(requiredHands)
+        .Select(hand => (hand, hand.GetPlayer(heroNickname)));
 }
+}
+
