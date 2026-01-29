@@ -152,22 +152,29 @@ public static class CliFunctions {
 
     private static object?[]
     GetParameterValues(this ParameterInfo[] parameters, string[] commandParts) {
+        // use simple positional reader similar to FluentParser instead of ad-hoc index math
         if (commandParts.Length - 1 < parameters.Length)
             throw new InvalidOperationException(
                 $"Expected {parameters.Length} arguments, got {commandParts.Length - 1}");
-        // Create an array of constructor parameters, which will have 1 parameter, like DirectoryPath, now empty
+
+        var reader = new CommandPartsReader(commandParts, 1); // skip command name
         var parameterValuesObject = new object?[parameters.Length];
-        for (int i = 0; i < parameters.Length; i++) {
-            var parameterFound = parameters[i]; // сразу первый параметр и будет нужный т.е [0], цикла не будет
-            var valuePart = commandParts[i + 1]; // а параметр комманды сидит в [0+1] т.е. "C:\Poker\1"
-            // пихаем в [0] c конвертацией "C:\Poker\1" -> Object "C:\Poker\1" {System.String DirectoryPath}
-            parameterValuesObject[i] = Convert.ChangeType(valuePart, parameterFound.ParameterType);
+
+        for (var i = 0; i < parameters.Length; i++) {
+            var parameter = parameters[i];
+            var rawValue = reader.ReadNext();
+            parameterValuesObject[i] = Convert.ChangeType(rawValue, parameter.ParameterType);
         }
+
         return parameterValuesObject;
     }
 
+ 
+
     public static class OutputDestination {
-        public static Action<string> WriteOutput = Console.WriteLine;
+        public static void WriteOutput(string message) {
+        Console.WriteLine(message);
+    }
     }
 }
 

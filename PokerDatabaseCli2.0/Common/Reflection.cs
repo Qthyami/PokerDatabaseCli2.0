@@ -8,26 +8,26 @@ public static class Attributes {
     GetSymbol<TEnum>(this TEnum value) where TEnum : Enum =>
         value.GetEnumAttribute<SymbolAttribute>().Value;
 
-   public static TEnum
-    ParseEnumBySymbol<TEnum>(this char symbol) where TEnum: Enum {
+    public static TEnum
+     ParseEnumBySymbol<TEnum>(this char symbol) where TEnum : Enum {
         var enumType = typeof(TEnum).VerifyIsEnum();
-        foreach(var enumValue in Enum.GetValues(enumType).Cast<TEnum>()) 
+        foreach (var enumValue in Enum.GetValues(enumType).Cast<TEnum>())
             if (enumValue.GetSymbol() == symbol)
                 return enumValue;
         throw new InvalidOperationException($"The symbol '{symbol}' does not correspond to any value of the enum {enumType.Name}");
     }
 
     public static TAttribute
-    GetEnumAttribute<TAttribute>(this object value) 
-    where TAttribute: Attribute {
+    GetEnumAttribute<TAttribute>(this object value)
+    where TAttribute : Attribute {
         if (!value.TryGetEnumAttribute<TAttribute>(out var result))
             throw new InvalidOperationException($"The enum value {value} does not have the attribute {typeof(TAttribute).Name}");
         return result;
     }
 
-    public static bool 
-    TryGetEnumAttribute<TAttribute>(this object value, out TAttribute result) 
-    where TAttribute: Attribute {
+    public static bool
+    TryGetEnumAttribute<TAttribute>(this object value, out TAttribute result)
+    where TAttribute : Attribute {
         var valueType = value.GetType().VerifyIsEnum();
         var memberInfo = value.GetType().GetMember(value.ToString()!);
         if (memberInfo.Length == 0) {
@@ -43,55 +43,55 @@ public static class Attributes {
         return true;
     }
 
-    public static Type 
+    public static Type
     VerifyIsEnum(this Type type) {
         if (!type.IsEnum)
             throw new InvalidOperationException($"The type {type.Name} is not an enum");
         return type;
     }
 
-   // public static TAttribute?
-   //GetAttribute<TAttribute>(this Enum value)
-   //    where TAttribute : Attribute {
-   //     var type = value.GetType();
-   //     var memberInfo = type.GetMember(value.ToString());
-   //     if (memberInfo.Length > 0) {
-   //         return memberInfo[0].GetCustomAttributes(typeof(TAttribute), false).FirstOrDefault() as TAttribute;
-   //     }
-   //     throw new ArgumentException($"Enum value '{value}' not found in type '{type.FullName}'.");
-   // }
+    public static bool
+   TryGetAttribute<TAttribute>(this Type type, out TAttribute attribute)
+       where TAttribute : Attribute {
 
-    //public static TAttribute?
-    //GetAttribute<TAttribute>(this MemberInfo member) where TAttribute : Attribute =>
-    //    member.GetCustomAttributes(typeof(TAttribute), false)
-    //        .FirstOrDefault() as TAttribute;
+        attribute = type
+            .GetCustomAttributes(typeof(TAttribute), false)
+            .FirstOrDefault() as TAttribute;
 
-    //public static TAttribute?
-    //GetAttribute<TAttribute>(this Type type) where TAttribute : Attribute =>
-    //    type.GetCustomAttributes(typeof(TAttribute), false)
-    //        .FirstOrDefault() as TAttribute;
-            
- public static bool
-TryGetAttribute<TAttribute>(this Type type, out TAttribute attribute)
-    where TAttribute : Attribute {
+        return attribute != null;
+    }
 
-    attribute = type
-        .GetCustomAttributes(typeof(TAttribute), false)
-        .FirstOrDefault() as TAttribute;
+    public static TAttribute
+    GetAttribute<TAttribute>(this Type type)
+        where TAttribute : Attribute {
 
-    return attribute != null;
+        if (!type.TryGetAttribute<TAttribute>(out var attribute))
+            throw new InvalidOperationException(
+                $"Type {type.Name} does not have attribute {typeof(TAttribute).Name}"
+            );
+
+        return attribute;
+    }
+
 }
 
-public static TAttribute
-GetAttribute<TAttribute>(this Type type)
-    where TAttribute : Attribute {
+// Minimal reader for command parts it ParameterInfo array using for reflection-based command parsing
+public class CommandPartsReader {
+    private readonly string[] _parts;
 
-    if (!type.TryGetAttribute<TAttribute>(out var attribute))
-        throw new InvalidOperationException(
-            $"Type {type.Name} does not have attribute {typeof(TAttribute).Name}"
-        );
+    public int Position { get; private set; }
 
-    return attribute;
-}
-   
+    public bool HasCurrent => Position < _parts.Length;
+
+    public CommandPartsReader(string[] parts, int startPosition = 0) {
+        _parts = parts;
+        Position = startPosition;
+    }
+
+    public string ReadNext() {
+        if (!HasCurrent)
+            throw new InvalidOperationException("Not enough command arguments provided");
+
+        return _parts[Position++];
+    }
 }
